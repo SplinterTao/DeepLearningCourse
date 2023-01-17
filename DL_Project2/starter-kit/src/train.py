@@ -1,252 +1,270 @@
-import tempfile
+<!DOCTYPE HTML>
+<html>
 
-import torch
-import numpy as np
-from livelossplot import PlotLosses
-from livelossplot.outputs import MatplotlibPlot
-from tqdm import tqdm
-from src.helpers import after_subplot
+<head>
+    <meta charset="utf-8">
 
-
-def train_one_epoch(train_dataloader, model, optimizer, loss):
-    """
-    Performs one train_one_epoch epoch
-    """
-
-    if torch.cuda.is_available():
-        # YOUR CODE HERE: transfer the model to the GPU
-        # HINT: use .cuda()
-
-    # YOUR CODE HERE: set the model to training mode
+    <title>train.py (editing)</title>
+    <link id="favicon" rel="shortcut icon" type="image/x-icon" href="/static/base/images/favicon-file.ico?v=e2776a7f45692c839d6eea7d7ff6f3b2">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="stylesheet" href="/static/components/jquery-ui/themes/smoothness/jquery-ui.min.css?v=3c2a865c832a1322285c55c6ed99abb2" type="text/css" />
+    <link rel="stylesheet" href="/static/components/jquery-typeahead/dist/jquery.typeahead.min.css?v=7afb461de36accb1aa133a1710f5bc56" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    train_loss = 0.0
+    
+<link rel="stylesheet" href="/static/components/codemirror/lib/codemirror.css?v=288352df06a67ee35003b0981da414ac">
+<link rel="stylesheet" href="/static/components/codemirror/addon/dialog/dialog.css?v=c89dce10b44d2882a024e7befc2b63f5">
 
-    for batch_idx, (data, target) in tqdm(
-        enumerate(train_dataloader),
-        desc="Training",
-        total=len(train_dataloader),
-        leave=True,
-        ncols=80,
-    ):
-        # move data to GPU
-        if torch.cuda.is_available():
-            data, target = data.cuda(), target.cuda()
+    <link rel="stylesheet" href="/static/style/style.min.css?v=e79dbfdd7c8f19c96a1c8d0d7da38bdc" type="text/css"/>
+    
 
-        # 1. clear the gradients of all optimized variables
-        # YOUR CODE HERE:
-        # 2. forward pass: compute predicted outputs by passing inputs to the model
-        output  = # YOUR CODE HERE
-        # 3. calculate the loss
-        loss_value  = # YOUR CODE HERE
-        # 4. backward pass: compute gradient of the loss with respect to model parameters
-        # YOUR CODE HERE:
-        # 5. perform a single optimization step (parameter update)
-        # YOUR CODE HERE:
+    <link rel="stylesheet" href="/custom/custom.css" type="text/css" />
+    <script src="/static/components/es6-promise/promise.min.js?v=f004a16cb856e0ff11781d01ec5ca8fe" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/components/preact/index.js?v=00a2fac73c670ce39ac53d26640eb542" type="text/javascript"></script>
+    <script src="/static/components/proptypes/index.js?v=c40890eb04df9811fcc4d47e53a29604" type="text/javascript"></script>
+    <script src="/static/components/preact-compat/index.js?v=f865e990e65ad27e3a2601d8adb48db1" type="text/javascript"></script>
+    <script src="/static/components/requirejs/require.js?v=951f856e81496aaeec2e71a1c2c0d51f" type="text/javascript" charset="utf-8"></script>
+    <script>
+      require.config({
+          
+          urlArgs: "v=20230117220518",
+          
+          baseUrl: '/static/',
+          paths: {
+            'auth/js/main': 'auth/js/main.min',
+            custom : '/custom',
+            nbextensions : '/nbextensions',
+            kernelspecs : '/kernelspecs',
+            underscore : 'components/underscore/underscore-min',
+            backbone : 'components/backbone/backbone-min',
+            jed: 'components/jed/jed',
+            jquery: 'components/jquery/jquery.min',
+            json: 'components/requirejs-plugins/src/json',
+            text: 'components/requirejs-text/text',
+            bootstrap: 'components/bootstrap/dist/js/bootstrap.min',
+            bootstraptour: 'components/bootstrap-tour/build/js/bootstrap-tour.min',
+            'jquery-ui': 'components/jquery-ui/jquery-ui.min',
+            moment: 'components/moment/min/moment-with-locales',
+            codemirror: 'components/codemirror',
+            termjs: 'components/xterm.js/xterm',
+            typeahead: 'components/jquery-typeahead/dist/jquery.typeahead.min',
+          },
+          map: { // for backward compatibility
+              "*": {
+                  "jqueryui": "jquery-ui",
+              }
+          },
+          shim: {
+            typeahead: {
+              deps: ["jquery"],
+              exports: "typeahead"
+            },
+            underscore: {
+              exports: '_'
+            },
+            backbone: {
+              deps: ["underscore", "jquery"],
+              exports: "Backbone"
+            },
+            bootstrap: {
+              deps: ["jquery"],
+              exports: "bootstrap"
+            },
+            bootstraptour: {
+              deps: ["bootstrap"],
+              exports: "Tour"
+            },
+            "jquery-ui": {
+              deps: ["jquery"],
+              exports: "$"
+            }
+          },
+          waitSeconds: 30,
+      });
 
-        # update average training loss
-        train_loss = train_loss + (
-            (1 / (batch_idx + 1)) * (loss_value.data.item() - train_loss)
-        )
+      require.config({
+          map: {
+              '*':{
+                'contents': 'services/contents',
+              }
+          }
+      });
 
-    return train_loss
+      // error-catching custom.js shim.
+      define("custom", function (require, exports, module) {
+          try {
+              var custom = require('custom/custom');
+              console.debug('loaded custom.js');
+              return custom;
+          } catch (e) {
+              console.error("error loading custom.js", e);
+              return {};
+          }
+      })
 
-
-def valid_one_epoch(valid_dataloader, model, loss):
-    """
-    Validate at the end of one epoch
-    """
-
-    with torch.no_grad():
-
-        # set the model to evaluation mode
-        # YOUR CODE HERE
-
-        if torch.cuda.is_available():
-            model.cuda()
-
-        valid_loss = 0.0
-        for batch_idx, (data, target) in tqdm(
-            enumerate(valid_dataloader),
-            desc="Validating",
-            total=len(valid_dataloader),
-            leave=True,
-            ncols=80,
-        ):
-            # move data to GPU
-            if torch.cuda.is_available():
-                data, target = data.cuda(), target.cuda()
-
-            # 1. forward pass: compute predicted outputs by passing inputs to the model
-            output  = # YOUR CODE HERE
-            # 2. calculate the loss
-            loss_value  = # YOUR CODE HERE
-
-            # Calculate average validation loss
-            valid_loss = valid_loss + (
-                (1 / (batch_idx + 1)) * (loss_value.data.item() - valid_loss)
-            )
-
-    return valid_loss
-
-
-def optimize(data_loaders, model, optimizer, loss, n_epochs, save_path, interactive_tracking=False):
-    # initialize tracker for minimum validation loss
-    if interactive_tracking:
-        liveloss = PlotLosses(outputs=[MatplotlibPlot(after_subplot=after_subplot)])
-    else:
-        liveloss = None
-
-    valid_loss_min = None
-    logs = {}
-
-    # Learning rate scheduler: setup a learning rate scheduler that
-    # reduces the learning rate when the validation loss reaches a
-    # plateau
-    # HINT: look here: 
-    # https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
-    scheduler  = # YOUR CODE HERE
-
-    for epoch in range(1, n_epochs + 1):
-
-        train_loss = train_one_epoch(
-            data_loaders["train"], model, optimizer, loss
-        )
-
-        valid_loss = valid_one_epoch(data_loaders["valid"], model, loss)
-
-        # print training/validation statistics
-        print(
-            "Epoch: {} \tTraining Loss: {:.6f} \tValidation Loss: {:.6f}".format(
-                epoch, train_loss, valid_loss
-            )
-        )
-
-        # If the validation loss decreases by more than 1%, save the model
-        if valid_loss_min is None or (
-                (valid_loss_min - valid_loss) / valid_loss_min > 0.01
-        ):
-            print(f"New minimum validation loss: {valid_loss:.6f}. Saving model ...")
-
-            # Save the weights to save_path
-            # YOUR CODE HERE
-
-            valid_loss_min = valid_loss
-
-        # Update learning rate, i.e., make a step in the learning rate scheduler
-        # YOUR CODE HERE
-
-        # Log the losses and the current learning rate
-        if interactive_tracking:
-            logs["loss"] = train_loss
-            logs["val_loss"] = valid_loss
-            logs["lr"] = optimizer.param_groups[0]["lr"]
-
-            liveloss.update(logs)
-            liveloss.send()
-
-
-def one_epoch_test(test_dataloader, model, loss):
-    # monitor test loss and accuracy
-    test_loss = 0.
-    correct = 0.
-    total = 0.
-
-    # set the module to evaluation mode
-    with torch.no_grad():
-
-        # set the model to evaluation mode
-        # YOUR CODE HERE
-
-        if torch.cuda.is_available():
-            model = model.cuda()
-
-        for batch_idx, (data, target) in tqdm(
-                enumerate(test_dataloader),
-                desc='Testing',
-                total=len(test_dataloader),
-                leave=True,
-                ncols=80
-        ):
-            # move data to GPU
-            if torch.cuda.is_available():
-                data, target = data.cuda(), target.cuda()
-
-            # 1. forward pass: compute predicted outputs by passing inputs to the model
-            logits  = # YOUR CODE HERE
-            # 2. calculate the loss
-            loss_value  = # YOUR CODE HERE
-
-            # update average test loss
-            test_loss = test_loss + ((1 / (batch_idx + 1)) * (loss_value.data.item() - test_loss))
-
-            # convert logits to predicted class
-            # HINT: the predicted class is the index of the max of the logits
-            pred  = # YOUR CODE HERE
-
-            # compare predictions to true label
-            correct += torch.sum(torch.squeeze(pred.eq(target.data.view_as(pred))).cpu())
-            total += data.size(0)
-
-    print('Test Loss: {:.6f}\n'.format(test_loss))
-
-    print('\nTest Accuracy: %2d%% (%2d/%2d)' % (
-        100. * correct / total, correct, total))
-
-    return test_loss
-
+    document.nbjs_translations = {"domain": "nbjs", "locale_data": {"nbjs": {"": {"domain": "nbjs"}}}};
+    document.documentElement.lang = navigator.language.toLowerCase();
+    </script>
 
     
-######################################################################################
-#                                     TESTS
-######################################################################################
-import pytest
+    
+
+</head>
+
+<body class="edit_app "
+ 
+data-base-url="/"
+data-file-path="src/train.py"
+
+  
+ 
+
+dir="ltr">
+
+<noscript>
+    <div id='noscript'>
+      Jupyter Notebook requires JavaScript.<br>
+      Please enable it to proceed. 
+  </div>
+</noscript>
+
+<div id="header">
+  <div id="header-container" class="container">
+  <div id="ipython_notebook" class="nav navbar-brand"><a href="/tree" title='dashboard'>
+      <img src='/static/base/images/logo.png?v=641991992878ee24c6f3826e81054a0f' alt='Jupyter Notebook'/>
+  </a></div>
+
+  
+
+<span id="save_widget" class="pull-left save_widget">
+    <span class="filename"></span>
+    <span class="last_modified"></span>
+</span>
 
 
-@pytest.fixture(scope="session")
-def data_loaders():
-    from .data import get_data_loaders
+  
+  
+  
+  
 
-    return get_data_loaders(batch_size=50, limit=200, valid_size=0.5, num_workers=0)
+    <span id="login_widget">
+      
+    </span>
+
+  
+
+  
+  
+  </div>
+  <div class="header-bar"></div>
+
+  
+
+<div id="menubar-container" class="container">
+  <div id="menubar">
+    <div id="menus" class="navbar navbar-default" role="navigation">
+      <div class="container-fluid">
+          <p  class="navbar-text indicator_area">
+          <span id="current-mode" >current mode</span>
+          </p>
+        <button type="button" class="btn btn-default navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <i class="fa fa-bars"></i>
+          <span class="navbar-text">Menu</span>
+        </button>
+        <ul class="nav navbar-nav navbar-right">
+          <li id="notification_area"></li>
+        </ul>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">File</a>
+              <ul id="file-menu" class="dropdown-menu">
+                <li id="new-file"><a href="#">New</a></li>
+                <li id="save-file"><a href="#">Save</a></li>
+                <li id="rename-file"><a href="#">Rename</a></li>
+                <li id="download-file"><a href="#">Download</a></li>
+              </ul>
+            </li>
+            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Edit</a>
+              <ul id="edit-menu" class="dropdown-menu">
+                <li id="menu-find"><a href="#">Find</a></li>
+                <li id="menu-replace"><a href="#">Find &amp; Replace</a></li>
+                <li class="divider"></li>
+                <li class="dropdown-header">Key Map</li>
+                <li id="menu-keymap-default"><a href="#">Default<i class="fa"></i></a></li>
+                <li id="menu-keymap-sublime"><a href="#">Sublime Text<i class="fa"></i></a></li>
+                <li id="menu-keymap-vim"><a href="#">Vim<i class="fa"></i></a></li>
+                <li id="menu-keymap-emacs"><a href="#">emacs<i class="fa"></i></a></li>
+              </ul>
+            </li>
+            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">View</a>
+              <ul id="view-menu" class="dropdown-menu">
+              <li id="toggle_header" title="Show/Hide the logo and notebook title (above menu bar)">
+              <a href="#">Toggle Header</a></li>
+              <li id="menu-line-numbers"><a href="#">Toggle Line Numbers</a></li>
+              </ul>
+            </li>
+            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Language</a>
+              <ul id="mode-menu" class="dropdown-menu">
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lower-header-bar"></div>
 
 
-@pytest.fixture(scope="session")
-def optim_objects():
-    from src.optimization import get_optimizer, get_loss
-    from src.model import MyModel
+</div>
 
-    model = MyModel(50)
-
-    return model, get_loss(), get_optimizer(model)
+<div id="site">
 
 
-def test_train_one_epoch(data_loaders, optim_objects):
-
-    model, loss, optimizer = optim_objects
-
-    for _ in range(2):
-        lt = train_one_epoch(data_loaders['train'], model, optimizer, loss)
-        assert not np.isnan(lt), "Training loss is nan"
+<div id="texteditor-backdrop">
+<div id="texteditor-container" class="container"></div>
+</div>
 
 
-def test_valid_one_epoch(data_loaders, optim_objects):
-
-    model, loss, optimizer = optim_objects
-
-    for _ in range(2):
-        lv = valid_one_epoch(data_loaders["valid"], model, loss)
-        assert not np.isnan(lv), "Validation loss is nan"
-
-def test_optimize(data_loaders, optim_objects):
-
-    model, loss, optimizer = optim_objects
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        optimize(data_loaders, model, optimizer, loss, 2, f"{temp_dir}/hey.pt")
+</div>
 
 
-def test_one_epoch_test(data_loaders, optim_objects):
 
-    model, loss, optimizer = optim_objects
 
-    tv = one_epoch_test(data_loaders["test"], model, loss)
-    assert not np.isnan(tv), "Test loss is nan"
+
+
+    
+
+
+<script src="/static/edit/js/main.min.js?v=ff500aa0e8bbfd58cff8b86b087bc00c" type="text/javascript" charset="utf-8"></script>
+
+
+<script type='text/javascript'>
+  function _remove_token_from_url() {
+    if (window.location.search.length <= 1) {
+      return;
+    }
+    var search_parameters = window.location.search.slice(1).split('&');
+    for (var i = 0; i < search_parameters.length; i++) {
+      if (search_parameters[i].split('=')[0] === 'token') {
+        // remote token from search parameters
+        search_parameters.splice(i, 1);
+        var new_search = '';
+        if (search_parameters.length) {
+          new_search = '?' + search_parameters.join('&');
+        }
+        var new_url = window.location.origin + 
+                      window.location.pathname + 
+                      new_search + 
+                      window.location.hash;
+        window.history.replaceState({}, "", new_url);
+        return;
+      }
+    }
+  }
+  _remove_token_from_url();
+</script>
+</body>
+
+</html>
