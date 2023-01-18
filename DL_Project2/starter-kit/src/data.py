@@ -1,270 +1,218 @@
-<!DOCTYPE HTML>
-<html>
-
-<head>
-    <meta charset="utf-8">
-
-    <title>data.py (editing)</title>
-    <link id="favicon" rel="shortcut icon" type="image/x-icon" href="/static/base/images/favicon-file.ico?v=e2776a7f45692c839d6eea7d7ff6f3b2">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <link rel="stylesheet" href="/static/components/jquery-ui/themes/smoothness/jquery-ui.min.css?v=3c2a865c832a1322285c55c6ed99abb2" type="text/css" />
-    <link rel="stylesheet" href="/static/components/jquery-typeahead/dist/jquery.typeahead.min.css?v=7afb461de36accb1aa133a1710f5bc56" type="text/css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    
-<link rel="stylesheet" href="/static/components/codemirror/lib/codemirror.css?v=288352df06a67ee35003b0981da414ac">
-<link rel="stylesheet" href="/static/components/codemirror/addon/dialog/dialog.css?v=c89dce10b44d2882a024e7befc2b63f5">
-
-    <link rel="stylesheet" href="/static/style/style.min.css?v=e79dbfdd7c8f19c96a1c8d0d7da38bdc" type="text/css"/>
-    
-
-    <link rel="stylesheet" href="/custom/custom.css" type="text/css" />
-    <script src="/static/components/es6-promise/promise.min.js?v=f004a16cb856e0ff11781d01ec5ca8fe" type="text/javascript" charset="utf-8"></script>
-    <script src="/static/components/preact/index.js?v=00a2fac73c670ce39ac53d26640eb542" type="text/javascript"></script>
-    <script src="/static/components/proptypes/index.js?v=c40890eb04df9811fcc4d47e53a29604" type="text/javascript"></script>
-    <script src="/static/components/preact-compat/index.js?v=f865e990e65ad27e3a2601d8adb48db1" type="text/javascript"></script>
-    <script src="/static/components/requirejs/require.js?v=951f856e81496aaeec2e71a1c2c0d51f" type="text/javascript" charset="utf-8"></script>
-    <script>
-      require.config({
-          
-          urlArgs: "v=20230117220518",
-          
-          baseUrl: '/static/',
-          paths: {
-            'auth/js/main': 'auth/js/main.min',
-            custom : '/custom',
-            nbextensions : '/nbextensions',
-            kernelspecs : '/kernelspecs',
-            underscore : 'components/underscore/underscore-min',
-            backbone : 'components/backbone/backbone-min',
-            jed: 'components/jed/jed',
-            jquery: 'components/jquery/jquery.min',
-            json: 'components/requirejs-plugins/src/json',
-            text: 'components/requirejs-text/text',
-            bootstrap: 'components/bootstrap/dist/js/bootstrap.min',
-            bootstraptour: 'components/bootstrap-tour/build/js/bootstrap-tour.min',
-            'jquery-ui': 'components/jquery-ui/jquery-ui.min',
-            moment: 'components/moment/min/moment-with-locales',
-            codemirror: 'components/codemirror',
-            termjs: 'components/xterm.js/xterm',
-            typeahead: 'components/jquery-typeahead/dist/jquery.typeahead.min',
-          },
-          map: { // for backward compatibility
-              "*": {
-                  "jqueryui": "jquery-ui",
-              }
-          },
-          shim: {
-            typeahead: {
-              deps: ["jquery"],
-              exports: "typeahead"
-            },
-            underscore: {
-              exports: '_'
-            },
-            backbone: {
-              deps: ["underscore", "jquery"],
-              exports: "Backbone"
-            },
-            bootstrap: {
-              deps: ["jquery"],
-              exports: "bootstrap"
-            },
-            bootstraptour: {
-              deps: ["bootstrap"],
-              exports: "Tour"
-            },
-            "jquery-ui": {
-              deps: ["jquery"],
-              exports: "$"
-            }
-          },
-          waitSeconds: 30,
-      });
-
-      require.config({
-          map: {
-              '*':{
-                'contents': 'services/contents',
-              }
-          }
-      });
-
-      // error-catching custom.js shim.
-      define("custom", function (require, exports, module) {
-          try {
-              var custom = require('custom/custom');
-              console.debug('loaded custom.js');
-              return custom;
-          } catch (e) {
-              console.error("error loading custom.js", e);
-              return {};
-          }
-      })
-
-    document.nbjs_translations = {"domain": "nbjs", "locale_data": {"nbjs": {"": {"domain": "nbjs"}}}};
-    document.documentElement.lang = navigator.language.toLowerCase();
-    </script>
-
-    
-    
-
-</head>
-
-<body class="edit_app "
- 
-data-base-url="/"
-data-file-path="src/data.py"
-
-  
- 
-
-dir="ltr">
-
-<noscript>
-    <div id='noscript'>
-      Jupyter Notebook requires JavaScript.<br>
-      Please enable it to proceed. 
-  </div>
-</noscript>
-
-<div id="header">
-  <div id="header-container" class="container">
-  <div id="ipython_notebook" class="nav navbar-brand"><a href="/tree" title='dashboard'>
-      <img src='/static/base/images/logo.png?v=641991992878ee24c6f3826e81054a0f' alt='Jupyter Notebook'/>
-  </a></div>
-
-  
-
-<span id="save_widget" class="pull-left save_widget">
-    <span class="filename"></span>
-    <span class="last_modified"></span>
-</span>
+import math
+import torch
+import torch.utils.data
+from pathlib import Path
+from torchvision import datasets, transforms
+import multiprocessing
+import os
+from .helpers import compute_mean_and_std, get_data_location
+import matplotlib.pyplot as plt
 
 
-  
-  
-  
-  
+def get_data_loaders(
+    batch_size: int = 32, valid_size: float = 0.2, num_workers: int = -1, limit: int = -1
+):
+    """
+    Create and returns the train_one_epoch, validation and test data loaders.
 
-    <span id="login_widget">
-      
-    </span>
+    :param batch_size: size of the mini-batches
+    :param valid_size: fraction of the dataset to use for validation. For example 0.2
+                       means that 20% of the dataset will be used for validation
+    :param num_workers: number of workers to use in the data loaders. Use -1 to mean
+                        "use all my cores"
+    :param limit: maximum number of data points to consider
+    :return a dictionary with 3 keys: 'train_one_epoch', 'valid' and 'test' containing respectively the
+            train_one_epoch, validation and test data loaders
+    """
 
-  
+    if num_workers == -1:
+        # Use all cores
+        num_workers = multiprocessing.cpu_count()
 
-  
-  
-  </div>
-  <div class="header-bar"></div>
+    # We will fill this up later
+    data_loaders = {"train": None, "valid": None, "test": None}
 
-  
+    base_path = Path(get_data_location())
 
-<div id="menubar-container" class="container">
-  <div id="menubar">
-    <div id="menus" class="navbar navbar-default" role="navigation">
-      <div class="container-fluid">
-          <p  class="navbar-text indicator_area">
-          <span id="current-mode" >current mode</span>
-          </p>
-        <button type="button" class="btn btn-default navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-          <i class="fa fa-bars"></i>
-          <span class="navbar-text">Menu</span>
-        </button>
-        <ul class="nav navbar-nav navbar-right">
-          <li id="notification_area"></li>
-        </ul>
-        <div class="navbar-collapse collapse">
-          <ul class="nav navbar-nav">
-            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">File</a>
-              <ul id="file-menu" class="dropdown-menu">
-                <li id="new-file"><a href="#">New</a></li>
-                <li id="save-file"><a href="#">Save</a></li>
-                <li id="rename-file"><a href="#">Rename</a></li>
-                <li id="download-file"><a href="#">Download</a></li>
-              </ul>
-            </li>
-            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Edit</a>
-              <ul id="edit-menu" class="dropdown-menu">
-                <li id="menu-find"><a href="#">Find</a></li>
-                <li id="menu-replace"><a href="#">Find &amp; Replace</a></li>
-                <li class="divider"></li>
-                <li class="dropdown-header">Key Map</li>
-                <li id="menu-keymap-default"><a href="#">Default<i class="fa"></i></a></li>
-                <li id="menu-keymap-sublime"><a href="#">Sublime Text<i class="fa"></i></a></li>
-                <li id="menu-keymap-vim"><a href="#">Vim<i class="fa"></i></a></li>
-                <li id="menu-keymap-emacs"><a href="#">emacs<i class="fa"></i></a></li>
-              </ul>
-            </li>
-            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">View</a>
-              <ul id="view-menu" class="dropdown-menu">
-              <li id="toggle_header" title="Show/Hide the logo and notebook title (above menu bar)">
-              <a href="#">Toggle Header</a></li>
-              <li id="menu-line-numbers"><a href="#">Toggle Line Numbers</a></li>
-              </ul>
-            </li>
-            <li class="dropdown"><a href="#" class="dropdown-toggle" data-toggle="dropdown">Language</a>
-              <ul id="mode-menu" class="dropdown-menu">
-              </ul>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+    # Compute mean and std of the dataset
+    mean, std = compute_mean_and_std()
+    print(f"Dataset mean: {mean}, std: {std}")
 
-<div class="lower-header-bar"></div>
-
-
-</div>
-
-<div id="site">
-
-
-<div id="texteditor-backdrop">
-<div id="texteditor-container" class="container"></div>
-</div>
-
-
-</div>
-
-
-
-
-
-
-    
-
-
-<script src="/static/edit/js/main.min.js?v=ff500aa0e8bbfd58cff8b86b087bc00c" type="text/javascript" charset="utf-8"></script>
-
-
-<script type='text/javascript'>
-  function _remove_token_from_url() {
-    if (window.location.search.length <= 1) {
-      return;
+    # YOUR CODE HERE:
+    # create 3 sets of data transforms: one for the training dataset,
+    # containing data augmentation, one for the validation dataset
+    # (without data augmentation) and one for the test set (again
+    # without augmentation)
+    # HINT: resize the image to 256 first, then crop them to 224, then add the
+    # appropriate transforms for that step
+    data_transforms = {
+        "train": transforms.Compose([
+            transforms.Resize([256,256]),
+            transforms.RandomAffine(scale=(0.9, 1.1), translate=(0.1, 0.1), degrees=10),
+        # Color modifications. Here I exaggerate to show the effect 
+        transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+        # Apply an horizontal flip with 50% probability (i.e., if you pass
+        # 100 images through around half of them will undergo the flipping)
+        transforms.RandomHorizontalFlip(0.5),
+        # Finally take a 224x224 random part of the image
+        transforms.RandomCrop(224, padding_mode="reflect", pad_if_needed=True),  
+            transforms.ToTensor()]
+        ),
+        "valid": transforms.Compose(
+            [transforms.Resize([256,256]),transforms.CenterCrop([224,224]),transforms.ToTensor()]
+        ),
+        "test": transforms.Compose(
+            [transforms.Resize([256,256]),transforms.CenterCrop([224,224]),transforms.ToTensor()]
+        ),
     }
-    var search_parameters = window.location.search.slice(1).split('&');
-    for (var i = 0; i < search_parameters.length; i++) {
-      if (search_parameters[i].split('=')[0] === 'token') {
-        // remote token from search parameters
-        search_parameters.splice(i, 1);
-        var new_search = '';
-        if (search_parameters.length) {
-          new_search = '?' + search_parameters.join('&');
-        }
-        var new_url = window.location.origin + 
-                      window.location.pathname + 
-                      new_search + 
-                      window.location.hash;
-        window.history.replaceState({}, "", new_url);
-        return;
-      }
-    }
-  }
-  _remove_token_from_url();
-</script>
-</body>
 
-</html>
+    # Create train and validation datasets
+    train_data = datasets.ImageFolder(
+        base_path / "train",data_transforms["train"]
+        # YOUR CODE HERE: add the appropriate transform that you defined in
+        # the data_transforms dictionary
+    )
+    # The validation dataset is a split from the train_one_epoch dataset, so we read
+    # from the same folder, but we apply the transforms for validation
+    valid_data = datasets.ImageFolder(
+        base_path / "train",data_transforms["valid"]
+        # YOUR CODE HERE: add the appropriate transform that you defined in
+        # the data_transforms dictionary
+    )
+
+    # obtain training indices that will be used for validation
+    n_tot = len(train_data)
+    indices = torch.randperm(n_tot)
+
+    # If requested, limit the number of data points to consider
+    if limit > 0:
+        indices = indices[:limit]
+        n_tot = limit
+
+    split = int(math.ceil(valid_size * n_tot))
+    train_idx, valid_idx = indices[split:], indices[:split]
+
+    # define samplers for obtaining training and validation batches
+    train_sampler = torch.utils.data.SubsetRandomSampler(train_idx)
+    valid_sampler  = torch.utils.data.SubsetRandomSampler(valid_idx)
+
+    # prepare data loaders
+    data_loaders["train"] = torch.utils.data.DataLoader(
+        train_data,
+        batch_size=batch_size,
+        sampler=train_sampler,
+        num_workers=num_workers,
+    )
+    data_loaders["valid"] = torch.utils.data.DataLoader(
+        train_data,
+        batch_size=batch_size,
+        sampler=valid_sampler,
+        num_workers=num_workers,
+    )
+
+    # Now create the test data loader
+    test_data = datasets.ImageFolder(
+        base_path / "test",
+        data_transforms["test"]
+    )
+
+    if limit > 0:
+        indices = torch.arange(limit)
+        test_sampler = torch.utils.data.SubsetRandomSampler(indices)
+    else:
+        test_sampler = None
+
+    data_loaders["test"] = torch.utils.data.DataLoader(
+        test_data, batch_size, shuffle=False
+    )
+
+    return data_loaders
+
+
+def visualize_one_batch(data_loaders, max_n: int = 5):
+    """
+    Visualize one batch of data.
+
+    :param data_loaders: dictionary containing data loaders
+    :param max_n: maximum number of images to show
+    :return: None
+    """
+    dataiter = iter(data_loaders["train"])
+    images, labels = next(dataiter)
+    # YOUR CODE HERE:
+    # obtain one batch of training images
+    # First obtain an iterator from the train dataloader
+    #dataiter  = iter(data_loaders)
+    # Then call the .next() method on the iterator you just
+    # obtained
+    #images, labels = dataiter.next()
+
+    # Undo the normalization (for visualization purposes)
+    mean, std = compute_mean_and_std()
+    invTrans = transforms.Compose(
+        [
+            transforms.Normalize(mean=[0.0, 0.0, 0.0], std=1 / std),
+            transforms.Normalize(mean=-mean, std=[1.0, 1.0, 1.0]),
+        ]
+    )
+
+    images = invTrans(images)
+
+    # YOUR CODE HERE:
+    # Get class names from the train data loader
+    class_names  = os.listdir(Path(get_data_location())/"train")
+
+    # Convert from BGR (the format used by pytorch) to
+    # RGB (the format expected by matplotlib)
+    images = torch.permute(images, (0, 2, 3, 1)).clip(0, 1)
+
+    # plot the images in the batch, along with the corresponding labels
+    fig = plt.figure(figsize=(25, 4))
+    for idx in range(max_n):
+        ax = fig.add_subplot(1, max_n, idx + 1, xticks=[], yticks=[])
+        ax.imshow(images[idx])
+        # print out the correct label for each image
+        # .item() gets the value contained in a Tensor
+        ax.set_title(class_names[labels[idx].item()])
+
+
+######################################################################################
+#                                     TESTS
+######################################################################################
+import pytest
+
+
+@pytest.fixture(scope="session")
+def data_loaders():
+    return get_data_loaders(batch_size=2, num_workers=0)
+
+
+def test_data_loaders_keys(data_loaders):
+
+    assert set(data_loaders.keys()) == {"train", "valid", "test"}, "The keys of the data_loaders dictionary should be train, valid and test"
+
+
+def test_data_loaders_output_type(data_loaders):
+    # Test the data loaders
+    dataiter = iter(data_loaders["train"])
+    images, labels = dataiter.next()
+
+    assert isinstance(images, torch.Tensor), "images should be a Tensor"
+    assert isinstance(labels, torch.Tensor), "labels should be a Tensor"
+    assert images[0].shape[-1] == 224, "The tensors returned by your dataloaders should be 224x224. Did you " \
+                                       "forget to resize and/or crop?"
+
+
+def test_data_loaders_output_shape(data_loaders):
+    dataiter = iter(data_loaders["train"])
+    images, labels = dataiter.next()
+
+    assert len(images) == 2, f"Expected a batch of size 2, got size {len(images)}"
+    assert (
+        len(labels) == 2
+    ), f"Expected a labels tensor of size 2, got size {len(labels)}"
+
+
+def test_visualize_one_batch(data_loaders):
+
+    visualize_one_batch(data_loaders, max_n=2)
