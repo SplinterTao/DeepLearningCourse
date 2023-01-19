@@ -22,7 +22,7 @@ def get_model_transfer_learning(model_name="resnet18", n_classes=50):
     # HINT: loop over all parameters. If "param" is one parameter,
     # "param.requires_grad = False" freezes it
     # YOUR CODE HERE
-    for param in models.parameters():
+    for param in model_transfer.parameters():
         if param.requires_grad:
             param.requires_grad = False
 
